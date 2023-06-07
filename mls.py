@@ -49,8 +49,8 @@ def clean_and_process_data(file_path):
         print("No NaN values in dataframe.")
     
     # Separate target from predictors
-    y = df['List Price']
-    X = df.drop('List Price', axis=1)
+    y = df['Sold Price']  # Use 'Sold Price' instead of 'List Price'
+    X = df.drop('Sold Price', axis=1)  # Use 'Sold Price' instead of 'List Price'
 
     # Split data into training and test sets
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
@@ -102,16 +102,23 @@ def clean_and_process_data(file_path):
     # Create a DataFrame for the sample predictions
     predictions = pd.DataFrame({
         "Property Index": sample_properties.index,
+        "Actual Price": y_test[sample_properties.index],  # Add column with actual prices
         "Predicted Price": sample_predictions
     })
     print("Predictions for First 20 Properties:")
     print(predictions)
-    
-    # Create a DataFrame for the model's features
+
+    # Create a DataFrame for the model's features and their importances
     features = pd.DataFrame({
-        "Features": X.columns
+        "Features": X.columns,
+        "Importance": gbm_tuned.feature_importances_  # Feature importances
     })
-    print("Features Used by the Model:")
+    features.sort_values(by="Importance", ascending=False, inplace=True)
+    print("Features Used by the Model and Their Importances:")
     print(features)
+
+clean_and_process_data('CMA_Plus.csv')
+
+
 
 clean_and_process_data('CMA_Plus.csv')
