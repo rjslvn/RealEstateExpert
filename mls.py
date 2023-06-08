@@ -38,33 +38,6 @@ def clean_and_process_data(file_path):
     # Define the model
     gbm = GradientBoostingRegressor()
 
-    # Fit model
-    print("Fitting model. Start time:", datetime.datetime.now())
-    gbm.fit(X_train, y_train)
-    print("Model fitting complete. End time:", datetime.datetime.now())
-
-    # Predict test set
-    y_pred = gbm.predict(X_test)
-
-    # Calculate and print MSE and R2 Score
-    print(f"Mean Squared Error (MSE): {mean_squared_error(y_test, y_pred)}")
-    print(f"R-squared: {r2_score(y_test, y_pred)}")
-
-    # Tune the hyperparameters of the GBM model
-    PARAM_GRID = {
-        "n_estimators": [100, 200, 300],
-        "learning_rate": [0.1, 0.01, 0.001],
-        "max_depth": [4, 5, 6]
-    }
-    GRID = GridSearchCV(gbm, PARAM_GRID, cv=5)
-
-    # Fit and tune model
-    print("Tuning model. Start time:", datetime.datetime.now())
-    GRID.fit(X_train, y_train)
-    print("Model tuning complete. End time:", datetime.datetime.now())
-
-    # Evaluate the tuned GBM model
-    gbm_tuned = GRID.best_estimator_
     y_pred_tuned = gbm_tuned.predict(X_test)
     
     # Create a DataFrame for the model's performance metrics
