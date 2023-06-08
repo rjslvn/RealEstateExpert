@@ -21,7 +21,7 @@ def clean_and_process_data(file_path):
 
     # Get list of non-numeric columns
     non_numeric_columns = df.select_dtypes(include=['object']).columns.tolist()
-
+    # ADDING 4 COMMENTS HERE 
     le = LabelEncoder()
     scaler = MinMaxScaler()
 
