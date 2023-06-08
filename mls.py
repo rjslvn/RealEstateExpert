@@ -1,13 +1,68 @@
+# Import necessary libraries
+from fuzzywuzzy import fuzz
+from geopy.geocoders import Nominatim
+from geopy.distance import geodesic
 import pandas as pd
+import requests
+from tqdm import tqdm
 from sklearn.preprocessing import LabelEncoder, MinMaxScaler
 from sklearn.model_selection import train_test_split, GridSearchCV
 from sklearn.ensemble import GradientBoostingRegressor
 from sklearn.metrics import mean_squared_error, r2_score
 import numpy as np
-from tqdm import tqdm
 import datetime
 
-def clean_and_process_data(file_path):
+# API settings
+BASE_URL = "https://api.mlsgrid.com/v2/Property"
+HEADERS = {
+    "Authorization": "Bearer 80c2ab3c769932b687dfa0e7d7c27398c25395db",
+    "Accept": "application/json"
+}
+
+# Define fuzzy match function
+def is_match(input_address, full_address, threshold=80):
+    return fuzz.token_set_ratio(input_address.lower(), full_address.lower()) >= threshold
+
+# Fetch data from the API
+def fetch_data():
+    df = pd.DataFrame()
+    url = BASE_URL
+    FILTER_PARAM = "OriginatingSystemName eq 'nwmls'"
+    params = {
+        "$filter": FILTER_PARAM,
+        "$top": 100
+    }
+    while True:
+        response = requests.get(url, headers=HEADERS, params=params)
+        data = response.json()
+        if "value" in data:
+            df = pd.concat([df, pd.DataFrame(data["value"])], ignore_index=True)
+        if "@odata.nextLink" in data:
+            url = data["@odata.nextLink"]
+        else:
+            break
+    return df
+
+# Geocode properties and calculate distances
+def geocode_properties(df, entered_coords):
+    geolocator = Nominatim(user_agent="myGeocoder")
+    active_listings = df[df['StandardStatus'] == 'Active']
+    active_listings['Distance'] = None
+
+    for idx, listing in active_listings.iterrows():
+        location = geolocator.geocode(listing['UnparsedAddress'])
+        if location is not None:
+            listing_coords = (location.latitude, location.longitude)
+            distance = geodesic(entered_coords, listing_coords).miles
+            active_listings.loc[idx, 'Distance'] = distance
+
+    if not active_listings['Distance'].isnull().all():
+        active_listings = active_listings.sort_values('Distance')
+
+    return active_listings
+
+# Clean and process the data
+def clean_and_process_data_base(file_path):
     # Load your DataFrame
     df = pd.read_csv(file_path)
 
@@ -49,8 +104,8 @@ def clean_and_process_data(file_path):
         print("No NaN values in dataframe.")
     
     # Separate target from predictors
-    y = df['Sold Price']  # Use 'Sold Price' instead of 'List Price'
-    X = df.drop('Sold Price', axis=1)  # Use 'Sold Price' instead of 'List Price'
+    y = df['List Price']
+    X = df.drop('List Price', axis=1)
 
     # Split data into training and test sets
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
@@ -102,23 +157,16 @@ def clean_and_process_data(file_path):
     # Create a DataFrame for the sample predictions
     predictions = pd.DataFrame({
         "Property Index": sample_properties.index,
-        "Actual Price": y_test[sample_properties.index],  # Add column with actual prices
         "Predicted Price": sample_predictions
     })
     print("Predictions for First 20 Properties:")
     print(predictions)
-
-    # Create a DataFrame for the model's features and their importances
+    
+    # Create a DataFrame for the model's features
     features = pd.DataFrame({
-        "Features": X.columns,
-        "Importance": gbm_tuned.feature_importances_  # Feature importances
+        "Features": X.columns
     })
-    features.sort_values(by="Importance", ascending=False, inplace=True)
-    print("Features Used by the Model and Their Importances:")
+    print("Features Used by the Model:")
     print(features)
 
-clean_and_process_data('CMA_Plus.csv')
-
-
-
-clean_and_process_data('CMA_Plus.csv')
+clean_and_process_data_base('CMA_Plus.csv')
