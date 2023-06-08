@@ -38,24 +38,7 @@ def clean_and_process_data(file_path):
 
     df = df.drop(non_numeric_columns, axis=1)
 
-    # Remove columns that only contain NaN values
-    df = df.dropna(how='all', axis=1)
-
-    # Fill NA/NAN values in dataframe
-    df.fillna(0, inplace=True)
-    if df.isnull().values.any():
-        print("Still contains NaN values.")
-    else:
-        print("No NaN values in dataframe.")
-    
-    # Separate target from predictors
-    y = df['List Price']
-    X = df.drop('List Price', axis=1)
-
-    # Split data into training and test sets
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
-
-    # Define the model
+    # Rem
     gbm = GradientBoostingRegressor()
 
     # Fit model
