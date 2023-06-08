@@ -32,27 +32,7 @@ def clean_and_process_data(file_path):
             df = pd.concat([df, pd.get_dummies(df[column], prefix=column)], axis=1)
             df[column] = le.fit_transform(df[column].astype(str))
         if len(df[column].unique()) > 1:
-            df[column] = scaler.fit_transform(df[column].values.reshape(-1, 1))
-        else:
-            df[column] = 0
-
-    df = df.drop(non_numeric_columns, axis=1)
-
-    # Remove columns that only contain NaN values
-    df = df.dropna(how='all', axis=1)
-
-    # Fill NA/NAN values in dataframe
-    df.fillna(0, inplace=True)
-    if df.isnull().values.any():
-        print("Still contains NaN values.")
-    else:
-        print("No NaN values in dataframe.")
-    
-    # Separate target from predictors
-    y = df['List Price']
-    X = df.drop('List Price', axis=1)
-
-    # Split data into training and test sets
+        
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
     # Define the model
